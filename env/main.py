@@ -1,12 +1,13 @@
 import os
 import sys
 import customtkinter as ctk
+import logging
 from navbar import NavBar
 from pages.library import LibraryPage
 from pages.detection import DetectionPage
 from pages.home import HomePage
 from keras.models import load_model
-import logging
+
 
 class App(ctk.CTk):
     os.environ['MEDIAPIPE_BINARY_GRAPH_PATH'] = r'D:\EXE\env\exe\Lib\site-packages\mediapipe\modules'
@@ -36,10 +37,15 @@ class App(ctk.CTk):
         # Load the model using the correct path
         self.model = self.load_model()
 
+        # Define the actions that correspond to your model's predictions
+        self.actions = ['tea', 'sugar', 'coffee', 'please', 'sorry', 'milk', 'hello', 'black',
+                        'green']  # Replace with your actual action names
+
         # Create instances of all pages at the start to avoid recreation
         self.pages["HomePage"] = HomePage(parent=self.container, controller=self)
         self.pages["LibraryPage"] = LibraryPage(parent=self.container, controller=self)
-        self.pages["DetectionPage"] = DetectionPage(parent=self.container, controller=self, model=self.model)
+        self.pages["DetectionPage"] = DetectionPage(parent=self.container, controller=self,
+                                                    model=self.model, actions=self.actions)
 
         # Show the initial page
         self.show_page("HomePage")
@@ -85,6 +91,7 @@ class App(ctk.CTk):
 
         # Call this method again after 16 ms (~60 FPS)
         self.after(16, self.update_window)
+
 
 if __name__ == "__main__":
     app = App()

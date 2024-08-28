@@ -9,7 +9,6 @@ class LibraryPage(ctk.CTkFrame):
     def resource_path(self, relative_path):
         """ Get the absolute path to the resource, works for both dev and PyInstaller """
         try:
-            # When using PyInstaller, _MEIPASS is where the temporary files are extracted
             base_path = sys._MEIPASS
         except Exception:
             base_path = os.path.abspath(".")
@@ -20,24 +19,22 @@ class LibraryPage(ctk.CTkFrame):
         super().__init__(parent)
         self.controller = controller
 
-        # Set dark mode background color
         self.configure(fg_color='gray18')
 
-        # Search bar
         self.search_bar = ctk.CTkEntry(self, placeholder_text="Search actions...", fg_color='gray28', text_color='white')
         self.search_bar.pack(pady=10, padx=10, fill=tk.X)
         self.search_bar.bind("<KeyRelease>", self.update_search)
 
         self.videos = {
-            "action1": (self.resource_path("assets/GIFs/black.gif"), "Black"),
-            "action2": (self.resource_path("assets/GIFs/green.gif"), "Green"),
-            "action3": (self.resource_path("assets/GIFs/coffee.gif"), "Coffee"),
-            "action4": (self.resource_path("assets/GIFs/hello.gif"), "Hello"),
-            "action5": (self.resource_path("assets/GIFs/tea.gif"), "Tea"),
-            "action6": (self.resource_path("assets/GIFs/sorry.gif"), "Sorry"),
-            "action7": (self.resource_path("assets/GIFs/sugar.gif"), "Sugar"),
-            "action8": (self.resource_path("assets/GIFs/please.gif"), "Please"),
-            "action9": (self.resource_path("assets/GIFs/milk.gif"), "Milk")
+            "Black": (self.resource_path("assets/GIFs/black.gif"), "Black"),
+            "Green": (self.resource_path("assets/GIFs/green.gif"), "Green"),
+            "Coffee": (self.resource_path("assets/GIFs/coffee.gif"), "Coffee"),
+            "Hello": (self.resource_path("assets/GIFs/hello.gif"), "Hello"),
+            "Tea": (self.resource_path("assets/GIFs/tea.gif"), "Tea"),
+            "Sorry": (self.resource_path("assets/GIFs/sorry.gif"), "Sorry"),
+            "Sugar": (self.resource_path("assets/GIFs/sugar.gif"), "Sugar"),
+            "Please": (self.resource_path("assets/GIFs/please.gif"), "Please"),
+            "Milk": (self.resource_path("assets/GIFs/milk.gif"), "Milk")
         }
 
         self.filtered_videos = self.videos.copy()
@@ -56,7 +53,16 @@ class LibraryPage(ctk.CTkFrame):
 
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
 
-        self.display_gifs_and_descriptions()
+        self.gifs = []  # To hold references to running GIFs
+
+    def on_show(self):
+        """Called when the page is shown."""
+        self.display_gifs_and_descriptions()  # Start displaying GIFs
+
+    def on_hide(self):
+        """Called when the page is hidden."""
+        # Stop GIF updates when hiding the page
+        self.gifs = []  # Clear the GIF list to stop updates
 
     def on_frame_configure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -68,9 +74,7 @@ class LibraryPage(ctk.CTkFrame):
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
-        self.gifs = []
         row_index = 0
-
         for action, (gif_path, description) in self.filtered_videos.items():
             try:
                 gif_frame = ctk.CTkFrame(self.content_frame, fg_color='gray18')
@@ -90,8 +94,6 @@ class LibraryPage(ctk.CTkFrame):
                         gif.seek(gif.tell() + 1)
                 except EOFError:
                     pass
-
-                print(f"Loaded {len(frames)} frames with delays: {delays}")
 
                 if not frames or not delays:
                     raise ValueError(f"No frames or delays found for GIF {gif_path}")
@@ -120,6 +122,9 @@ class LibraryPage(ctk.CTkFrame):
                 print(f"Error loading GIF {gif_path}: {e}")
 
         def update_gif(gif_data, frame_index=0):
+            if gif_data not in self.gifs:  # Stop update if GIF has been cleared
+                return
+
             canvas = gif_data['canvas']
             frames = gif_data['frames']
             delays = gif_data['delays']
